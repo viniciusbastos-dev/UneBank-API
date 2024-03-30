@@ -41,6 +41,7 @@ userRouter.post("/create", async (request, response) => {
 
   const user = new User({
     fullName,
+    phone,
     email,
     passwordHash,
   });
@@ -51,9 +52,9 @@ userRouter.post("/create", async (request, response) => {
 });
 
 userRouter.post("/auth", async (request, response) => {
-  const { email, password, ...rest } = request.body;
+  const { email, password, ...extraFields } = request.body;
 
-  if (Object.keys(rest).length > 0) {
+  if (Object.keys(extraFields).length > 0) {
     return response
       .status(400)
       .json({ error: "Campos extras no corpo da requisição" });
