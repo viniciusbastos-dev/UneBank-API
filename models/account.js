@@ -7,14 +7,15 @@ const accountSchema = new mongoose.Schema({
     ref: "User",
     requireD: true,
   },
-  accountNumber: {
-    type: String,
-    required: true,
-    unique: true,
-  },
   balance: {
     type: Number,
     default: 0,
+  },
+  card: {
+    cardName: String,
+    cardNumber: String,
+    cvv: String,
+    expiryDate: String,
   },
 });
 

@@ -3,29 +3,27 @@ const bcrypt = require("bcrypt");
 const User = require("../models/user");
 const Account = require("../models/account");
 const jwt = require("jsonwebtoken");
+const {
+  generateCreditCardNumber,
+  generateExpirationDate,
+  generateCVV,
+} = require("../helper/cardFunctions");
 
 const nameRegex = /^[a-zA-ZÀ-ú]+ [a-zA-ZÀ-ú]+$/;
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const generateAccountNumber = async () => {
-  const characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  const accountLength = 10;
-  let accountNumber = "";
+const shortenName = (fullName) => {
+  const parts = fullName.split(" ");
 
-  while (true) {
-    for (let i = 0; i < accountLength; i++) {
-      const randomIndex = Math.floor(Math.random() * characters.length);
-      accountNumber += characters[randomIndex];
-    }
-    const existingAccount = await Account.findOne({ accountNumber });
-    if (!existingAccount) {
-      break;
-    } else {
-      accountNumber = "";
-    }
+  if (parts.length >= 2) {
+    const firstName = parts[0];
+
+    const lastNameInitial = parts[parts.length - 1].charAt(0).toUpperCase();
+
+    return `${firstName} ${lastNameInitial}.`;
+  } else {
+    return fullName;
   }
-
-  return accountNumber;
 };
 
 userRouter.post("/create", async (request, response) => {
@@ -79,12 +77,19 @@ userRouter.post("/create", async (request, response) => {
 
   const savedUser = await user.save();
 
-  const accountNumber = await generateAccountNumber();
+  const cardNumber = await generateCreditCardNumber();
+  const expiryDate = generateExpirationDate();
+  const cvv = generateCVV();
 
   const account = new Account({
     userId: savedUser._id,
-    accountNumber,
-    balance: 0, // Pode definir o saldo inicial da conta aqui
+    balance: 0,
+    card: {
+      cardName: shortenName(fullName),
+      cardNumber,
+      expiryDate,
+      cvv,
+    },
   });
 
   await account.save();
