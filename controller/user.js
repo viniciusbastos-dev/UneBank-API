@@ -1,9 +1,32 @@
 const userRouter = require("express").Router();
 const bcrypt = require("bcrypt");
 const User = require("../models/user");
+const Account = require("../models/account");
+const jwt = require("jsonwebtoken");
 
 const nameRegex = /^[a-zA-ZÀ-ú]+ [a-zA-ZÀ-ú]+$/;
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const generateAccountNumber = async () => {
+  const characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const accountLength = 10;
+  let accountNumber = "";
+
+  while (true) {
+    for (let i = 0; i < accountLength; i++) {
+      const randomIndex = Math.floor(Math.random() * characters.length);
+      accountNumber += characters[randomIndex];
+    }
+    const existingAccount = await Account.findOne({ accountNumber });
+    if (!existingAccount) {
+      break;
+    } else {
+      accountNumber = "";
+    }
+  }
+
+  return accountNumber;
+};
 
 userRouter.post("/create", async (request, response) => {
   const { fullName, phone, email, password, ...extraFields } = request.body;
@@ -48,6 +71,16 @@ userRouter.post("/create", async (request, response) => {
 
   const savedUser = await user.save();
 
+  const accountNumber = await generateAccountNumber();
+
+  const account = new Account({
+    userId: savedUser._id,
+    accountNumber,
+    balance: 0, // Pode definir o saldo inicial da conta aqui
+  });
+
+  await account.save();
+
   response.status(201).json(savedUser);
 });
 
@@ -84,7 +117,18 @@ userRouter.post("/auth", async (request, response) => {
     return response.status(401).json({ error: "Email ou senha inválida" });
   }
 
-  response.status(200).json({ email: user.email, fullName: user.fullName });
+  const userForToken = {
+    email: user.email,
+    id: user._id,
+  };
+
+  const token = jwt.sign(userForToken, process.env.SECRET, {
+    expiresIn: "7d",
+  });
+
+  response
+    .status(200)
+    .json({ token, email: user.email, fullName: user.fullName });
 });
 
 module.exports = userRouter;
