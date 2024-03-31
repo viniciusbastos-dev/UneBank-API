@@ -37,25 +37,33 @@ userRouter.post("/create", async (request, response) => {
       .json({ error: "Campos extras no corpo da requisição" });
   }
 
+  const emailFound = await User.findOne({ email });
+
+  if (emailFound !== null) {
+    return response
+      .status(409)
+      .json({ error: "Este endereço de e-mail já está sendo utilizado." });
+  }
+
   if (!nameRegex.test(fullName)) {
     return response.status(400).json({
-      error: "Por favor, forneça um nome completo válido (Nome Sobrenome)",
+      error: "Por favor, forneça um nome completo válido (Nome Sobrenome).",
     });
   }
 
   if (!email) {
-    return response.status(400).json({ error: "Por favor, forneça um email" });
+    return response.status(400).json({ error: "Por favor, forneça um email." });
   }
 
   if (!emailRegex.test(email)) {
     return response
       .status(400)
-      .json({ error: "Por favor, forneça um email válido" });
+      .json({ error: "Por favor, forneça um email válido." });
   }
 
   if (!password || password.length < 6) {
     return response.status(400).json({
-      error: "Por favor, forneça uma senha com pelo menos 6 caracteres",
+      error: "Por favor, forneça uma senha com pelo menos 6 caracteres.",
     });
   }
 
